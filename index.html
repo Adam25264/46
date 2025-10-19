@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartTendance - Complete Attendance System</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #22aa44;
+            --primary-dark: #1a8833;
+            --primary-light: #2dcc55;
+            --secondary: #1a8833;
+            --danger: #cc3333;
+            --warning: #cc9900;
+            --dark: #1a1a1a;
+            --light: #f5f5f5;
+            --gray: #cccccc;
+            --text-dark: #333333;
+            --text-light: #ffffff;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: #333333;
+        }
+
+        body.rtl {
+            direction: rtl;
+        }
+
+        body.rtl .nav-buttons {
+            flex-direction: row-reverse;
+        }
+
+        body.rtl .table-header {
+            flex-direction: row-reverse;
+        }
+
+        body.rtl .modal-buttons {
+            flex-direction: row-reverse;
+        }
+
+        body.rtl .setting-item {
+            flex-direction: row-reverse;
+        }
+
+        body.rtl .filters {
+            flex-direction: row-reverse;
+        }
+
+        body.rtl .calendar-header {
+            flex-direction: row-reverse;
+        }
+
+        body.rtl .qr-info p {
+            flex-direction: row-reverse;
+        }
+        
+        .app-container {
+            display: none;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .app-container.active {
+            display: block;
+        }
+        
+        /* HEADER STYLES */
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+            border: 1px solid #333333;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .light-mode .header {
+            background: linear-gradient(135deg, #e0e0e0 0%, #f0f0f0 100%);
+            border: 1px solid #cccccc;
+            color: #333333;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            color: #44ff44;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 10px rgba(68, 255, 68, 0.3);
+        }
+        
+        .light-mode .header h1 {
+            color: #0066cc;
+            text-shadow: 0 2px 10px rgba(0, 102, 204, 0.2);
+        }
+        
+        .nav-buttons {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .nav-btn {
+            background: linear-gradient(135deg, #44ff44 0%, #22cc22 100%);
+            color: #000;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(68, 255, 68, 0.3);
+        }
+        
+        .light-mode .nav-btn {
+            background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(68, 255, 68, 0.5);
+        }
+        
+        .light-mode .nav-btn:hover {
+            box-shadow: 0 6px 20px rgba(0, 102, 204, 0.5);
+        }
+        
+        .nav-btn.active {
+            background: linear-gradient(135deg, #ff4444 0%, #cc2222 100%);
+            color: white;
+        }
+        
+        .light-mode .nav-btn.active {
+            background: linear-gradient(135deg, #cc0000 0%, #990000 100%);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid #333;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .light-mode .stat-card {
+            background: linear-gradient(135deg, #e0e0e0 0%, #f0f0f0 100%);
+            border: 1px solid #cccccc;
+            color: #333333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .light-mode .stat-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #44ff44;
+            margin: 10px 0;
+        }
+        
+        .light-mode .stat-number {
+            color: #0066cc;
+        }
+        
+        .lectures-container {
+            background: #1a1a1a;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid #333333;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .light-mode .lectures-container {
+            background: #f0f0f0;
+            border: 1px solid #cccccc;
+            color: #333333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .table-header {
+            background: #2a2a2a;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #44ff44;
+        }
+        
+        .light-mode .table-header {
+            background: #e0e0e0;
+            border-bottom: 2px solid #0066cc;
+        }
+        
+        .lectures-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .lectures-table th {
+            background: #2a2a2a;
+            color: #44ff44;
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #44ff44;
+        }
+        
+        .light-mode .lectures-table th {
+            background: #e0e0e0;
+            color: #0066cc;
+            border-bottom: 2px solid #0066cc;
+        }
+        
+        .lectures-table td {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            color: #ffffff;
+        }
+        
+        .light-mode .lectures-table td {
+            border-bottom: 1px solid #cccccc;
+            color: #333333;
+        }
+        
+        .lectures-table tr:hover {
+            background: #2a2a2a;
+        }
+        
+        .light-mode .lectures-table tr:hover {
+            background: #e8e8e8;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-scheduled { background: #331111; color: #ff4444; border: 1px solid #ff4444; }
+        .status-active { background: #333311; color: #ffff44; border: 1px solid #ffff44; }
+        .status-completed { background: #113311; color: #44ff44; border: 1px solid #44ff44; }
+        
+        .light-mode .status-scheduled { background: #ffe6e6; color: #cc0000; border: 1px solid #cc0000; }
+        .light-mode .status-active { background: #fff9e6; color: #cc9900; border: 1px solid #cc9900; }
+        .light-mode .status-completed { background: #e6ffe6; color: #006600; border: 1px solid #006600; }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            margin: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary { background: #44ff44; color: #000; }
+        .btn-warning { background: #ffff44; color: #000; }
+        .btn-danger { background: #ff4444; color: #fff; }
+        .btn-info { background: #2196f3; color: #fff; }
+        
+        .light-mode .btn-primary { background: #0066cc; color: #fff; }
+        .light-mode .btn-warning { background: #ff9900; color: #fff; }
+        .light-mode .btn-danger { background: #cc0000; color: #fff; }
+        .light-mode .btn-info { background: #006699; color: #fff; }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        /* QR MODAL STYLES */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .light-mode .modal {
+            background: rgba(0,0,0,0.7);
+        }
+        
+        .modal-content {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #44ff44;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .light-mode .modal-content {
+            background: #f0f0f0;
+            border: 2px solid #0066cc;
+            color: #333333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .qr-code-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 20px 0;
+            border: 3px solid #44ff44;
+        }
+        
+        .light-mode .qr-code-container {
+            border: 3px solid #0066cc;
+        }
+        
+        .qr-code-image {
+            width: 200px;
+            height: 200px;
+            display: block;
+        }
+        
+        .qr-info {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .light-mode .qr-info {
+            background: #e0e0e0;
+        }
+        
+        .qr-info p {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .qr-info strong {
+            color: #44ff44;
+        }
+        
+        .light-mode .qr-info strong {
+            color: #0066cc;
+        }
+        
+        .qr-timer {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #1a1a1a;
+        }
+        
+        .light-mode .qr-timer {
+            background: #f0f0f0;
+        }
+        
+        .timer-warning {
+            color: #ffff44;
+            animation: blink 1s infinite;
+        }
+        
+        .timer-danger {
+            color: #ff4444;
+            animation: blink 0.5s infinite;
+        }
+        
+        .scan-progress {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .light-mode .scan-progress {
+            background: #ddd;
+        }
+        
+        .scan-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #44ff44, #22cc22);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* FORM STYLES */
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+        
+        .light-mode .form-group label {
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            background: #1a1a1a;
+            color: white;
+            border: 1px solid #444;
+        }
+        
+        .light-mode .form-group input, .light-mode .form-group select {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+        }
+        
+        .scan-instruction {
+            background: #113311;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            border: 2px solid #44ff44;
+        }
+        
+        .light-mode .scan-instruction {
+            background: #e6ffe6;
+            border: 2px solid #006600;
+        }
+        
+        .scan-instruction h3 {
+            color: #44ff44;
+            margin-bottom: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .light-mode .scan-instruction h3 {
+            color: #006600;
+        }
+        
+        /* ATTENDANCE MANAGER STYLES */
+        .filters {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .light-mode .filters {
+            background: #e0e0e0;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            color: #44ff44;
+            font-size: 14px;
+        }
+        
+        .light-mode .filter-group label {
+            color: #0066cc;
+        }
+        
+        .filter-group select, .filter-group input {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+        }
+        
+        .light-mode .filter-group select, .light-mode .filter-group input {
+            background: #f5f5f5;
+            border: 1px solid #cccccc;
+            color: #333333;
+        }
+        
+        .attendance-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+        
+        .light-mode .summary-card {
+            background: #e0e0e0;
+            border: 1px solid #cccccc;
+        }
+        
+        /* SCHEDULE MANAGER STYLES */
+        .calendar {
+            background: #2a2a2a;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .light-mode .calendar {
+            background: #e0e0e0;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+        
+        .calendar-day {
+            background: #1a1a1a;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .light-mode .calendar-day {
+            background: #f5f5f5;
+            color: #333333;
+        }
+        
+        .calendar-day:hover {
+            background: #2a2a2a;
+            transform: scale(1.05);
+        }
+        
+        .light-mode .calendar-day:hover {
+            background: #e8e8e8;
+        }
+        
+        .calendar-day.has-lecture {
+            background: #113311;
+            border: 1px solid #44ff44;
+        }
+        
+        .light-mode .calendar-day.has-lecture {
+            background: #e6ffe6;
+            border: 1px solid #006600;
+        }
+        
+        .calendar-day.today {
+            background: #44ff44;
+            color: #000;
+            font-weight: bold;
+        }
+        
+        .light-mode .calendar-day.today {
+            background: #0066cc;
+            color: #fff;
+        }
+        
+        /* STUDENT SCANNER STYLES */
+        .scanner-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .scanner-placeholder {
+            width: 300px;
+            height: 300px;
+            background: #2a2a2a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            border: 2px solid #44ff44;
+            margin: 20px 0;
+        }
+        
+        .light-mode .scanner-placeholder {
+            background: #e0e0e0;
+            border: 2px solid #0066cc;
+        }
+        
+        .scanner-instructions-full {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: left;
+        }
+        
+        .light-mode .scanner-instructions-full {
+            background: #e0e0e0;
+        }
+        
+        .scanner-instructions-full ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .scanner-instructions-full li {
+            margin-bottom: 10px;
+        }
+        
+        /* SETTINGS STYLES */
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .settings-card {
+            background: #1a1a1a;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid #333333;
+        }
+        
+        .light-mode .settings-card {
+            background: #f0f0f0;
+            border: 1px solid #cccccc;
+        }
+        
+        .settings-card h3 {
+            color: #44ff44;
+            margin-bottom: 15px;
+        }
+        
+        .light-mode .settings-card h3 {
+            color: #0066cc;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .light-mode .setting-item {
+            border-bottom: 1px solid #cccccc;
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .light-mode .slider {
+            background-color: #ccc;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #44ff44;
+        }
+        
+        .light-mode input:checked + .slider {
+            background-color: #0066cc;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        @media (max-width: 600px) {
+            .nav-buttons {
+                flex-direction: column;
+            }
+            
+            .nav-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="app-container active">
+        <div class="header">
+            <h1><i class="fas fa-chalkboard-teacher"></i> <span data-translate="dashboardTitle">SmartTendance Lecturer Dashboard</span></h1>
+            <p data-translate="dashboardSubtitle">Complete Lecture Attendance Management System with QR Codes</p>
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showApp('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> <span data-translate="dashboard">Dashboard</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('attendanceManager')">
+                    <i class="fas fa-users"></i> <span data-translate="attendanceManager">Attendance Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('scheduleManager')">
+                    <i class="fas fa-calendar"></i> <span data-translate="scheduleManager">Schedule Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('studentScanner')">
+                    <i class="fas fa-qrcode"></i> <span data-translate="studentScanner">Student Scanner</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('settings')">
+                    <i class="fas fa-cog"></i> <span data-translate="settings">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-chalkboard fa-2x"></i>
+                <div class="stat-number" id="totalLectures">0</div>
+                <div data-translate="totalLectures">Total Lectures</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-play-circle fa-2x"></i>
+                <div class="stat-number" id="activeLectures">0</div>
+                <div data-translate="activeLectures">Active Lectures</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-user-graduate fa-2x"></i>
+                <div class="stat-number" id="totalStudents">0</div>
+                <div data-translate="totalStudents">Total Students</div>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-chart-line fa-2x"></i>
+                <div class="stat-number" id="attendanceRate">0%</div>
+                <div data-translate="attendanceRate">Attendance Rate</div>
+            </div>
+        </div>
+
+        <div class="lectures-container">
+            <div class="table-header">
+                <h3><i class="fas fa-list"></i> <span data-translate="recentLectures">Recent Lectures</span></h3>
+                <button class="btn btn-primary" onclick="openNewLectureModal()">
+                    <i class="fas fa-plus"></i> <span data-translate="startNewLecture">Start New Lecture</span>
+                </button>
+            </div>
+            <table class="lectures-table">
+                <thead>
+                    <tr>
+                        <th data-translate="course">Course</th>
+                        <th data-translate="dateTime">Date & Time</th>
+                        <th data-translate="room">Room</th>
+                        <th data-translate="students">Students</th>
+                        <th data-translate="status">Status</th>
+                        <th data-translate="actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="lecturesTableBody">
+                    <!-- Lectures will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ATTENDANCE MANAGER -->
+    <div id="attendanceManager" class="app-container">
+        <div class="header">
+            <h1><i class="fas fa-users"></i> <span data-translate="attendanceManager">Attendance Manager</span></h1>
+            <p data-translate="attendanceSubtitle">Track and manage student attendance records</p>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="showApp('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> <span data-translate="dashboard">Dashboard</span>
+                </button>
+                <button class="nav-btn active" onclick="showApp('attendanceManager')">
+                    <i class="fas fa-users"></i> <span data-translate="attendanceManager">Attendance Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('scheduleManager')">
+                    <i class="fas fa-calendar"></i> <span data-translate="scheduleManager">Schedule Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('studentScanner')">
+                    <i class="fas fa-qrcode"></i> <span data-translate="studentScanner">Student Scanner</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('settings')">
+                    <i class="fas fa-cog"></i> <span data-translate="settings">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label><i class="fas fa-book"></i> <span data-translate="course">Course</span></label>
+                <select id="courseFilter">
+                    <option value="all" data-translate="allCourses">All Courses</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-calendar"></i> <span data-translate="dateFrom">Date From</span></label>
+                <input type="date" id="dateFrom">
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-calendar"></i> <span data-translate="dateTo">Date To</span></label>
+                <input type="date" id="dateTo">
+            </div>
+            <div class="filter-group">
+                <label><i class="fas fa-user-check"></i> <span data-translate="status">Status</span></label>
+                <select id="statusFilter">
+                    <option value="all" data-translate="allStatus">All Status</option>
+                    <option value="present" data-translate="present">Present</option>
+                    <option value="absent" data-translate="absent">Absent</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" style="align-self: flex-end;" onclick="applyFilters()">
+                <i class="fas fa-filter"></i> <span data-translate="applyFilters">Apply Filters</span>
+            </button>
+        </div>
+
+        <div class="attendance-summary">
+            <div class="summary-card">
+                <i class="fas fa-list-alt fa-2x"></i>
+                <div class="stat-number" id="totalRecords">0</div>
+                <div data-translate="totalRecords">Total Records</div>
+            </div>
+            <div class="summary-card">
+                <i class="fas fa-calendar-day fa-2x"></i>
+                <div class="stat-number" id="presentToday">0%</div>
+                <div data-translate="presentToday">Present Today</div>
+            </div>
+            <div class="summary-card">
+                <i class="fas fa-calendar-week fa-2x"></i>
+                <div class="stat-number" id="presentWeek">0%</div>
+                <div data-translate="presentWeek">This Week</div>
+            </div>
+            <div class="summary-card">
+                <i class="fas fa-calendar-alt fa-2x"></i>
+                <div class="stat-number" id="presentMonth">0%</div>
+                <div data-translate="presentMonth">This Month</div>
+            </div>
+        </div>
+
+        <div class="lectures-container">
+            <div class="table-header">
+                <h3><i class="fas fa-table"></i> <span data-translate="attendanceRecords">Attendance Records</span></h3>
+                <div>
+                    <button class="btn btn-primary" onclick="exportAttendance('excel')">
+                        <i class="fas fa-download"></i> <span data-translate="exportExcel">Export Excel</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="exportAttendance('csv')">
+                        <i class="fas fa-download"></i> <span data-translate="exportCSV">Export CSV</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="exportAttendance('pdf')">
+                        <i class="fas fa-download"></i> <span data-translate="exportPDF">Export PDF</span>
+                    </button>
+                </div>
+            </div>
+            <table class="lectures-table">
+                <thead>
+                    <tr>
+                        <th data-translate="studentID">Student ID</th>
+                        <th data-translate="studentName">Student Name</th>
+                        <th data-translate="course">Course</th>
+                        <th data-translate="date">Date</th>
+                        <th data-translate="time">Time</th>
+                        <th data-translate="status">Status</th>
+                        <th data-translate="actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    <!-- Attendance records will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SCHEDULE MANAGER -->
+    <div id="scheduleManager" class="app-container">
+        <div class="header">
+            <h1><i class="fas fa-calendar"></i> <span data-translate="scheduleManager">Schedule Manager</span></h1>
+            <p data-translate="scheduleSubtitle">Plan and manage lecture schedules</p>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="showApp('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> <span data-translate="dashboard">Dashboard</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('attendanceManager')">
+                    <i class="fas fa-users"></i> <span data-translate="attendanceManager">Attendance Manager</span>
+                </button>
+                <button class="nav-btn active" onclick="showApp('scheduleManager')">
+                    <i class="fas fa-calendar"></i> <span data-translate="scheduleManager">Schedule Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('studentScanner')">
+                    <i class="fas fa-qrcode"></i> <span data-translate="studentScanner">Student Scanner</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('settings')">
+                    <i class="fas fa-cog"></i> <span data-translate="settings">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="btn btn-primary" onclick="previousMonth()">
+                    <i class="fas fa-chevron-left"></i> <span data-translate="previous">Previous</span>
+                </button>
+                <h3 id="currentMonth">June 2024</h3>
+                <button class="btn btn-primary" onclick="nextMonth()">
+                    <span data-translate="next">Next</span> <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- Calendar days will be generated here -->
+            </div>
+        </div>
+
+        <div class="lectures-container">
+            <div class="table-header">
+                <h3><i class="fas fa-clock"></i> <span data-translate="lectureSchedule">Lecture Schedule</span></h3>
+                <button class="btn btn-primary" onclick="openScheduleModal()">
+                    <i class="fas fa-plus"></i> <span data-translate="addNewSchedule">Add New Schedule</span>
+                </button>
+            </div>
+            <table class="lectures-table">
+                <thead>
+                    <tr>
+                        <th data-translate="course">Course</th>
+                        <th data-translate="day">Day</th>
+                        <th data-translate="time">Time</th>
+                        <th data-translate="room">Room</th>
+                        <th data-translate="recurring">Recurring</th>
+                        <th data-translate="actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleTableBody">
+                    <!-- Schedule records will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- STUDENT SCANNER -->
+    <div id="studentScanner" class="app-container">
+        <div class="header">
+            <h1><i class="fas fa-qrcode"></i> <span data-translate="studentScanner">Student Scanner</span></h1>
+            <p data-translate="scannerSubtitle">QR Code-based attendance system</p>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="showApp('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> <span data-translate="dashboard">Dashboard</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('attendanceManager')">
+                    <i class="fas fa-users"></i> <span data-translate="attendanceManager">Attendance Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('scheduleManager')">
+                    <i class="fas fa-calendar"></i> <span data-translate="scheduleManager">Schedule Manager</span>
+                </button>
+                <button class="nav-btn active" onclick="showApp('studentScanner')">
+                    <i class="fas fa-qrcode"></i> <span data-translate="studentScanner">Student Scanner</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('settings')">
+                    <i class="fas fa-cog"></i> <span data-translate="settings">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="scanner-container">
+            <div style="font-size: 48px; margin-bottom: 20px;">
+                <i class="fas fa-mobile-alt"></i> <i class="fas fa-arrow-right"></i> <i class="fas fa-qrcode"></i>
+            </div>
+            <h3 style="color: #44ff44; margin-bottom: 10px;" data-translate="qrInstructions">QR Code Scanner Instructions</h3>
+            <p style="color: #ccc; margin-bottom: 30px;" data-translate="scannerDescription">Students use any QR code scanner app to mark attendance</p>
+            
+            <div class="scanner-placeholder">
+                <div style="text-align: center; color: #44ff44;">
+                    <div style="font-size: 64px;"><i class="fas fa-qrcode"></i></div>
+                    <p data-translate="qrDisplay">QR Code Display</p>
+                    <p data-translate="generatedFromDashboard">Generated from Dashboard</p>
+                </div>
+            </div>
+            
+            <div class="scanner-instructions-full">
+                <h4><i class="fas fa-info-circle"></i> <span data-translate="howItWorks">How it works:</span></h4>
+                <ol>
+                    <li data-translate="step1">Lecturer starts a lecture from the Dashboard</li>
+                    <li data-translate="step2">Lecturer clicks "Show QR" to display the QR code</li>
+                    <li data-translate="step3">Students use any QR scanner app on their phones</li>
+                    <li data-translate="step4">Students scan the QR code displayed by the lecturer</li>
+                    <li data-translate="step5">Attendance is automatically recorded in the system</li>
+                </ol>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <button class="btn btn-primary" style="padding: 15px 30px; font-size: 16px;" onclick="showApp('dashboard')">
+                    <i class="fas fa-arrow-left"></i> <span data-translate="backToDashboard">Back to Dashboard to Generate QR Code</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings" class="app-container">
+        <div class="header">
+            <h1><i class="fas fa-cog"></i> <span data-translate="settings">Settings</span></h1>
+            <p data-translate="settingsSubtitle">Customize your SmartTendance experience</p>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="showApp('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> <span data-translate="dashboard">Dashboard</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('attendanceManager')">
+                    <i class="fas fa-users"></i> <span data-translate="attendanceManager">Attendance Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('scheduleManager')">
+                    <i class="fas fa-calendar"></i> <span data-translate="scheduleManager">Schedule Manager</span>
+                </button>
+                <button class="nav-btn" onclick="showApp('studentScanner')">
+                    <i class="fas fa-qrcode"></i> <span data-translate="studentScanner">Student Scanner</span>
+                </button>
+                <button class="nav-btn active" onclick="showApp('settings')">
+                    <i class="fas fa-cog"></i> <span data-translate="settings">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-card">
+                <h3><i class="fas fa-language"></i> <span data-translate="languageRegion">Language & Region</span></h3>
+                <div class="setting-item">
+                    <span data-translate="interfaceLanguage">Interface Language</span>
+                    <select id="interfaceLanguage" onchange="updateLanguage(this.value)">
+                        <option value="en">English</option>
+                        <option value="fr">Français (French)</option>
+                        <option value="ar">العربية (Arabic)</option>
+                        <option value="es">Español (Spanish)</option>
+                        <option value="zh">中文 (Chinese)</option>
+                        <option value="hi">हिन्दी (Hindi)</option>
+                        <option value="pt">Português (Portuguese)</option>
+                        <option value="ru">Русский (Russian)</option>
+                        <option value="ja">日本語 (Japanese)</option>
+                        <option value="de">Deutsch (German)</option>
+                        <option value="it">Italiano (Italian)</option>
+                        <option value="ko">한국어 (Korean)</option>
+                        <option value="tr">Türkçe (Turkish)</option>
+                        <option value="nl">Nederlands (Dutch)</option>
+                        <option value="sw">Kiswahili (Swahili)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="dateFormat">Date Format</span>
+                    <select id="dateFormat">
+                        <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+                        <option value="DD/MM/YYYY">DD/MM/YYYY (EU)</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="timeFormat">Time Format</span>
+                    <select id="timeFormat">
+                        <option value="12h">12-hour (AM/PM)</option>
+                        <option value="24h">24-hour</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="autoTranslate">Auto-translate QR Instructions</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoTranslate" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fas fa-palette"></i> <span data-translate="appearance">Appearance</span></h3>
+                <div class="setting-item">
+                    <span data-translate="darkMode">Dark Mode</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="darkModeToggle" checked onchange="toggleDarkMode(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="fontSize">Font Size</span>
+                    <select id="fontSize">
+                        <option value="small" data-translate="small">Small</option>
+                        <option value="medium" selected data-translate="medium">Medium</option>
+                        <option value="large" data-translate="large">Large</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fas fa-bell"></i> <span data-translate="notifications">Notifications</span></h3>
+                <div class="setting-item">
+                    <span data-translate="lectureReminders">Lecture Reminders</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="lectureReminders" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="attendanceAlerts">Attendance Alerts</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="attendanceAlerts" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fas fa-database"></i> <span data-translate="dataManagement">Data Management</span></h3>
+                <div class="setting-item">
+                    <span data-translate="autoBackup">Auto Backup</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoBackup">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="exportFormat">Export Format</span>
+                    <select id="exportFormat">
+                        <option value="excel">Excel</option>
+                        <option value="csv">CSV</option>
+                        <option value="pdf">PDF</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="settings-card">
+                <h3><i class="fas fa-qrcode"></i> <span data-translate="qrCodeSettings">QR Code Settings</span></h3>
+                <div class="setting-item">
+                    <span data-translate="qrExpiryTime">QR Code Expiry Time</span>
+                    <select id="qrExpiryTime">
+                        <option value="5">5 minutes</option>
+                        <option value="10" selected>10 minutes</option>
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="autoRefreshQR">Auto-refresh QR Codes</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoRefreshQR" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3><i class="fas fa-globe"></i> <span data-translate="regionalSettings">Regional Settings</span></h3>
+                <div class="setting-item">
+                    <span data-translate="firstDayOfWeek">First Day of Week</span>
+                    <select id="firstDayOfWeek">
+                        <option value="0">Sunday</option>
+                        <option value="1" selected>Monday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="temperatureUnit">Temperature Unit</span>
+                    <select id="temperatureUnit">
+                        <option value="celsius">Celsius (°C)</option>
+                        <option value="fahrenheit">Fahrenheit (°F)</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <span data-translate="distanceUnit">Distance Unit</span>
+                    <select id="distanceUnit">
+                        <option value="metric">Metric (km, m)</option>
+                        <option value="imperial">Imperial (miles, feet)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW LECTURE MODAL -->
+    <div id="newLectureModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #44ff44;"><i class="fas fa-plus"></i> <span data-translate="startNewLecture">Start New Lecture</span></h3>
+            <form id="newLectureForm">
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> <span data-translate="courseCode">Course Code (e.g., CS101)</span></label>
+                    <input type="text" id="newLectureCourseCode" placeholder="Enter course code" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> <span data-translate="courseName">Course Name</span></label>
+                    <input type="text" id="newLectureCourseName" placeholder="Enter course name" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-door-open"></i> <span data-translate="room">Room</span></label>
+                    <input type="text" id="newLectureRoom" placeholder="Enter room number" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> <span data-translate="numberOfStudents">Number of Students</span></label>
+                    <input type="number" id="newLectureStudents" placeholder="Enter number of students" min="1" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeNewLectureModal()" class="btn btn-danger">
+                        <i class="fas fa-times"></i> <span data-translate="cancel">Cancel</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-play"></i> <span data-translate="startLecture">Start Lecture</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR CODE MODAL -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #44ff44;"><i class="fas fa-qrcode"></i> <span data-translate="attendanceQR">Attendance QR Code</span></h3>
+            
+            <div class="qr-code-container">
+                <canvas id="qrCanvas"></canvas>
+                <img id="qrCodeImage" class="qr-code-image" src="" alt="QR Code" style="display: none;">
+            </div>
+            
+            <div class="qr-timer" id="qrTimer">
+                <span data-translate="validFor">Valid for:</span> <span id="timerValue">10:00</span>
+            </div>
+
+            <!-- Real-time Scanning Status -->
+            <div class="scan-instruction">
+                <h3><i class="fas fa-mobile-alt"></i> <span data-translate="scanWithApp">Scan with SmartTendance App</span></h3>
+                <p data-translate="realTimeRecording">Students are automatically recorded when they scan this QR code</p>
+                
+                <div class="qr-info">
+                    <p><strong data-translate="studentsScanned">Students Scanned:</strong> <span id="scannedCount">0</span> / <span id="totalStudentsCount">0</span></p>
+                    <p><strong data-translate="scanStatus">Status:</strong> <span id="scanStatusText">Waiting for scans...</span></p>
+                </div>
+            </div>
+            
+            <div class="qr-info">
+                <p><strong data-translate="courseCode">Course Code:</strong> <span id="qrCourseCode">CS101</span></p>
+                <p><strong data-translate="courseName">Course Name:</strong> <span id="qrCourseName">Computer Science 101</span></p>
+                <p><strong data-translate="room">Room:</strong> <span id="qrLectureRoom">Room 301</span></p>
+                <p><strong data-translate="students">Students:</strong> <span id="qrLectureStudents">45</span></p>
+            </div>
+            
+            <div class="modal-buttons">
+                <button onclick="closeQRModal()" class="btn btn-danger">
+                    <i class="fas fa-times"></i> <span data-translate="close">Close</span>
+                </button>
+                <button onclick="refreshQRCode()" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> <span data-translate="refreshQR">Refresh QR</span>
+                </button>
+                <button onclick="testScanRandomStudent()" class="btn btn-warning">
+                    <i class="fas fa-test"></i> Test Scan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW SCHEDULE MODAL -->
+    <div id="newScheduleModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color: #44ff44;"><i class="fas fa-plus"></i> <span data-translate="addNewSchedule">Add New Schedule</span></h3>
+            <form id="newScheduleForm">
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> <span data-translate="courseCode">Course Code (e.g., CS101)</span></label>
+                    <input type="text" id="newScheduleCourseCode" placeholder="Enter course code" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> <span data-translate="courseName">Course Name</span></label>
+                    <input type="text" id="newScheduleCourseName" placeholder="Enter course name" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day"></i> <span data-translate="day">Day</span></label>
+                    <select id="newScheduleDay">
+                        <option value="Monday" data-translate="monday">Monday</option>
+                        <option value="Tuesday" data-translate="tuesday">Tuesday</option>
+                        <option value="Wednesday" data-translate="wednesday">Wednesday</option>
+                        <option value="Thursday" data-translate="thursday">Thursday</option>
+                        <option value="Friday" data-translate="friday">Friday</option>
+                        <option value="Saturday" data-translate="saturday">Saturday</option>
+                        <option value="Sunday" data-translate="sunday">Sunday</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> <span data-translate="startTime">Start Time</span></label>
+                    <input type="time" id="newScheduleStartTime" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> <span data-translate="endTime">End Time</span></label>
+                    <input type="time" id="newScheduleEndTime" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-door-open"></i> <span data-translate="room">Room</span></label>
+                    <input type="text" id="newScheduleRoom" placeholder="Enter room number" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-redo"></i> <span data-translate="recurring">Recurring</span></label>
+                    <select id="newScheduleRecurring">
+                        <option value="Weekly" data-translate="weekly">Weekly</option>
+                        <option value="Daily" data-translate="daily">Daily</option>
+                        <option value="Monthly" data-translate="monthly">Monthly</option>
+                        <option value="Once" data-translate="once">Once</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeNewScheduleModal()" class="btn btn-danger">
+                        <i class="fas fa-times"></i> <span data-translate="cancel">Cancel</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> <span data-translate="addSchedule">Add Schedule</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ==================== COMPLETE TRANSLATION SYSTEM ====================
+        const translations = {
+            en: {
+                // Dashboard
+                dashboardTitle: "SmartTendance Lecturer Dashboard",
+                dashboardSubtitle: "Complete Lecture Attendance Management System with QR Codes",
+                dashboard: "Dashboard",
+                attendanceManager: "Attendance Manager",
+                scheduleManager: "Schedule Manager",
+                studentScanner: "Student Scanner",
+                settings: "Settings",
+                totalLectures: "Total Lectures",
+                activeLectures: "Active Lectures",
+                totalStudents: "Total Students",
+                attendanceRate: "Attendance Rate",
+                recentLectures: "Recent Lectures",
+                startNewLecture: "Start New Lecture",
+                course: "Course",
+                dateTime: "Date & Time",
+                room: "Room",
+                students: "Students",
+                status: "Status",
+                actions: "Actions",
+                start: "Start",
+                showQR: "Show QR",
+                end: "End",
+                view: "View",
+                scheduled: "Scheduled",
+                active: "Active",
+                completed: "Completed",
+                
+                // Attendance Manager
+                attendanceSubtitle: "Track and manage student attendance records",
+                allCourses: "All Courses",
+                dateFrom: "Date From",
+                dateTo: "Date To",
+                allStatus: "All Status",
+                present: "Present",
+                absent: "Absent",
+                applyFilters: "Apply Filters",
+                totalRecords: "Total Records",
+                presentToday: "Present Today",
+                presentWeek: "This Week",
+                presentMonth: "This Month",
+                attendanceRecords: "Attendance Records",
+                exportExcel: "Export Excel",
+                exportCSV: "Export CSV",
+                exportPDF: "Export PDF",
+                studentID: "Student ID",
+                studentName: "Student Name",
+                date: "Date",
+                time: "Time",
+                
+                // Schedule Manager
+                scheduleSubtitle: "Plan and manage lecture schedules",
+                previous: "Previous",
+                next: "Next",
+                lectureSchedule: "Lecture Schedule",
+                addNewSchedule: "Add New Schedule",
+                day: "Day",
+                recurring: "Recurring",
+                monday: "Monday",
+                tuesday: "Tuesday",
+                wednesday: "Wednesday",
+                thursday: "Thursday",
+                friday: "Friday",
+                saturday: "Saturday",
+                sunday: "Sunday",
+                startTime: "Start Time",
+                endTime: "End Time",
+                weekly: "Weekly",
+                daily: "Daily",
+                monthly: "Monthly",
+                once: "Once",
+                addSchedule: "Add Schedule",
+                edit: "Edit",
+                delete: "Delete",
+                
+                // Student Scanner
+                scannerSubtitle: "QR Code-based attendance system",
+                qrInstructions: "QR Code Scanner Instructions",
+                scannerDescription: "Students use any QR code scanner app to mark attendance",
+                qrDisplay: "QR Code Display",
+                generatedFromDashboard: "Generated from Dashboard",
+                howItWorks: "How it works:",
+                step1: "Lecturer starts a lecture from the Dashboard",
+                step2: "Lecturer clicks \"Show QR\" to display the QR code",
+                step3: "Students use any QR scanner app on their phones",
+                step4: "Students scan the QR code displayed by the lecturer",
+                step5: "Attendance is automatically recorded in the system",
+                backToDashboard: "Back to Dashboard to Generate QR Code",
+                
+                // Settings
+                settingsSubtitle: "Customize your SmartTendance experience",
+                languageRegion: "Language & Region",
+                interfaceLanguage: "Interface Language",
+                dateFormat: "Date Format",
+                timeFormat: "Time Format",
+                autoTranslate: "Auto-translate QR Instructions",
+                appearance: "Appearance",
+                darkMode: "Dark Mode",
+                fontSize: "Font Size",
+                small: "Small",
+                medium: "Medium",
+                large: "Large",
+                notifications: "Notifications",
+                lectureReminders: "Lecture Reminders",
+                attendanceAlerts: "Attendance Alerts",
+                dataManagement: "Data Management",
+                autoBackup: "Auto Backup",
+                exportFormat: "Export Format",
+                qrCodeSettings: "QR Code Settings",
+                qrExpiryTime: "QR Code Expiry Time",
+                autoRefreshQR: "Auto-refresh QR Codes",
+                regionalSettings: "Regional Settings",
+                firstDayOfWeek: "First Day of Week",
+                temperatureUnit: "Temperature Unit",
+                distanceUnit: "Distance Unit",
+                
+                // QR Modal
+                courseCode: "Course Code",
+                courseName: "Course Name",
+                numberOfStudents: "Number of Students",
+                cancel: "Cancel",
+                startLecture: "Start Lecture",
+                attendanceQR: "Attendance QR Code",
+                validFor: "Valid for:",
+                scanWithApp: "Scan with your SmartTendance App",
+                close: "Close",
+                refreshQR: "Refresh QR",
+                studentsScanned: "Students Scanned",
+                scanStatus: "Status",
+                realTimeRecording: "Students are automatically recorded when they scan this QR code"
+            },
+            fr: {
+                // Dashboard
+                dashboardTitle: "Tableau de bord enseignant SmartTendance",
+                dashboardSubtitle: "Système complet de gestion de présence avec codes QR",
+                dashboard: "Tableau de bord",
+                attendanceManager: "Gestionnaire de présence",
+                scheduleManager: "Gestionnaire d'emploi du temps",
+                studentScanner: "Scanner étudiant",
+                settings: "Paramètres",
+                totalLectures: "Total des cours",
+                activeLectures: "Cours actifs",
+                totalStudents: "Total des étudiants",
+                attendanceRate: "Taux de présence",
+                recentLectures: "Cours récents",
+                startNewLecture: "Commencer un nouveau cours",
+                course: "Cours",
+                dateTime: "Date et heure",
+                room: "Salle",
+                students: "Étudiants",
+                status: "Statut",
+                actions: "Actions",
+                start: "Commencer",
+                showQR: "Afficher QR",
+                end: "Terminer",
+                view: "Voir",
+                scheduled: "Planifié",
+                active: "Actif",
+                completed: "Terminé",
+                
+                // Attendance Manager
+                attendanceSubtitle: "Suivre et gérer les registres de présence des étudiants",
+                allCourses: "Tous les cours",
+                dateFrom: "Date de début",
+                dateTo: "Date de fin",
+                allStatus: "Tous les statuts",
+                present: "Présent",
+                absent: "Absent",
+                applyFilters: "Appliquer les filtres",
+                totalRecords: "Total des enregistrements",
+                presentToday: "Présents aujourd'hui",
+                presentWeek: "Cette semaine",
+                presentMonth: "Ce mois-ci",
+                attendanceRecords: "Registres de présence",
+                exportExcel: "Exporter Excel",
+                exportCSV: "Exporter CSV",
+                exportPDF: "Exporter PDF",
+                studentID: "ID étudiant",
+                studentName: "Nom de l'étudiant",
+                date: "Date",
+                time: "Heure",
+                
+                // Schedule Manager
+                scheduleSubtitle: "Planifier et gérer les emplois du temps des cours",
+                previous: "Précédent",
+                next: "Suivant",
+                lectureSchedule: "Emploi du temps des cours",
+                addNewSchedule: "Ajouter un nouvel emploi du temps",
+                day: "Jour",
+                recurring: "Récurrent",
+                monday: "Lundi",
+                tuesday: "Mardi",
+                wednesday: "Mercredi",
+                thursday: "Jeudi",
+                friday: "Vendredi",
+                saturday: "Samedi",
+                sunday: "Dimanche",
+                startTime: "Heure de début",
+                endTime: "Heure de fin",
+                weekly: "Hebdomadaire",
+                daily: "Quotidien",
+                monthly: "Mensuel",
+                once: "Une fois",
+                addSchedule: "Ajouter l'emploi du temps",
+                edit: "Modifier",
+                delete: "Supprimer",
+                
+                // Student Scanner
+                scannerSubtitle: "Système de présence basé sur les codes QR",
+                qrInstructions: "Instructions du scanner de code QR",
+                scannerDescription: "Les étudiants utilisent n'importe quelle application de scanner QR pour marquer leur présence",
+                qrDisplay: "Affichage du code QR",
+                generatedFromDashboard: "Généré depuis le tableau de bord",
+                howItWorks: "Comment ça marche :",
+                step1: "L'enseignant commence un cours depuis le tableau de bord",
+                step2: "L'enseignant clique sur \"Afficher QR\" pour afficher le code QR",
+                step3: "Les étudiants utilisent n'importe quelle application de scanner QR sur leurs téléphones",
+                step4: "Les étudiants scannent le code QR affiché par l'enseignant",
+                step5: "La présence est automatiquement enregistrée dans le système",
+                backToDashboard: "Retour au tableau de bord pour générer un code QR",
+                
+                // Settings
+                settingsSubtitle: "Personnalisez votre expérience SmartTendance",
+                languageRegion: "Langue et région",
+                interfaceLanguage: "Langue de l'interface",
+                dateFormat: "Format de date",
+                timeFormat: "Format d'heure",
+                autoTranslate: "Traduction automatique des instructions QR",
+                appearance: "Apparence",
+                darkMode: "Mode sombre",
+                fontSize: "Taille de police",
+                small: "Petit",
+                medium: "Moyen",
+                large: "Grand",
+                notifications: "Notifications",
+                lectureReminders: "Rappels de cours",
+                attendanceAlerts: "Alertes de présence",
+                dataManagement: "Gestion des données",
+                autoBackup: "Sauvegarde automatique",
+                exportFormat: "Format d'exportation",
+                qrCodeSettings: "Paramètres du code QR",
+                qrExpiryTime: "Temps d'expiration du QR",
+                autoRefreshQR: "Actualisation automatique des QR",
+                regionalSettings: "Paramètres régionaux",
+                firstDayOfWeek: "Premier jour de la semaine",
+                temperatureUnit: "Unité de température",
+                distanceUnit: "Unité de distance",
+                
+                // QR Modal
+                courseCode: "Code du cours",
+                courseName: "Nom du cours",
+                numberOfStudents: "Nombre d'étudiants",
+                cancel: "Annuler",
+                startLecture: "Commencer le cours",
+                attendanceQR: "Code QR de présence",
+                validFor: "Valable pour :",
+                scanWithApp: "Scannez avec votre application SmartTendance",
+                close: "Fermer",
+                refreshQR: "Actualiser QR",
+                studentsScanned: "Étudiants scannés",
+                scanStatus: "Statut",
+                realTimeRecording: "Les étudiants sont automatiquement enregistrés lorsqu'ils scannent ce code QR"
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        // ==================== SCANNING VARIABLES ====================
+        let scanInterval = null;
+        let qrTimerInterval;
+        let currentLectureId = null;
+
+        // ==================== CALENDAR VARIABLES ====================
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        // ==================== DATA STORAGE ====================
+        function initializeSharedStorage() {
+            if (!localStorage.getItem('smartTendanceShared')) {
+                const sharedData = {
+                    students: [
+                        { id: 'STU1001', name: 'John Smith', email: 'john.smith@student.edu' },
+                        { id: 'STU1002', name: 'Sarah Johnson', email: 'sarah.j@student.edu' },
+                        { id: 'STU1003', name: 'Mike Chen', email: 'mike.chen@student.edu' },
+                        { id: 'STU1004', name: 'Emma Wilson', email: 'emma.w@student.edu' },
+                        { id: 'STU1005', name: 'David Brown', email: 'david.b@student.edu' },
+                        { id: 'STU1006', name: 'Lisa Garcia', email: 'lisa.g@student.edu' },
+                        { id: 'STU1007', name: 'James Wilson', email: 'james.w@student.edu' },
+                        { id: 'STU1008', name: 'Maria Martinez', email: 'maria.m@student.edu' },
+                        { id: 'STU1009', name: 'Robert Taylor', email: 'robert.t@student.edu' },
+                        { id: 'STU1010', name: 'Jennifer Lee', email: 'jennifer.l@student.edu' }
+                    ],
+                    attendanceRecords: [],
+                    lectures: [],
+                    schedules: [],
+                    lastUpdate: new Date().toISOString()
+                };
+                localStorage.setItem('smartTendanceShared', JSON.stringify(sharedData));
+            }
+        }
+
+        function getSharedData() {
+            const data = localStorage.getItem('smartTendanceShared');
+            return data ? JSON.parse(data) : { students: [], attendanceRecords: [], lectures: [], schedules: [] };
+        }
+
+        function updateSharedData(newData) {
+            localStorage.setItem('smartTendanceShared', JSON.stringify({
+                ...newData,
+                lastUpdate: new Date().toISOString()
+            }));
+        }
+
+        // ==================== SAMPLE DATA ====================
+        let lectures = JSON.parse(localStorage.getItem('lectures')) || [
+            { 
+                id: 1, 
+                course: "Computer Science 101", 
+                code: "CS101", 
+                date: "2024-06-27", 
+                time: "09:00 AM", 
+                status: "active", 
+                students: 45, 
+                room: "Room 301",
+                attendance: []
+            },
+            { 
+                id: 2, 
+                course: "Mathematics 201", 
+                code: "MATH201", 
+                date: "2024-06-27", 
+                time: "11:00 AM", 
+                status: "scheduled", 
+                students: 38, 
+                room: "Room 205",
+                attendance: []
+            },
+            { 
+                id: 3, 
+                course: "Physics 301", 
+                code: "PHY301", 
+                date: "2024-06-26", 
+                time: "02:00 PM", 
+                status: "completed", 
+                students: 32, 
+                room: "Lab 105",
+                attendance: generateSampleAttendance(32)
+            }
+        ];
+
+        let schedules = JSON.parse(localStorage.getItem('schedules')) || [
+            { id: 1, course: "CS101", courseName: "Computer Science 101", day: "Monday", time: "09:00-10:30", room: "301", recurring: "Weekly" },
+            { id: 2, course: "MATH201", courseName: "Mathematics 201", day: "Tuesday", time: "11:00-12:30", room: "205", recurring: "Weekly" },
+            { id: 3, course: "PHY301", courseName: "Physics 301", day: "Wednesday", time: "14:00-15:30", room: "Lab 105", recurring: "Weekly" }
+        ];
+
+        function generateSampleAttendance(studentCount) {
+            const attendance = [];
+            const presentCount = Math.floor(studentCount * 0.85);
+            const sharedData = getSharedData();
+            
+            for (let i = 1; i <= studentCount; i++) {
+                const studentIndex = (i - 1) % sharedData.students.length;
+                const student = sharedData.students[studentIndex];
+                
+                attendance.push({
+                    studentId: student.id,
+                    studentName: student.name,
+                    status: i <= presentCount ? 'present' : 'absent',
+                    timestamp: new Date().toISOString(),
+                    courseCode: "PHY301",
+                    courseName: "Physics 301",
+                    date: new Date().toISOString().split('T')[0],
+                    time: new Date().toLocaleTimeString(),
+                    room: "Lab 105"
+                });
+            }
+            return attendance;
+        }
+
+        // ==================== LANGUAGE SYSTEM ====================
+        function updateLanguage(lang) {
+            currentLanguage = lang;
+            const t = translations[lang] || translations.en;
+            
+            // Update all elements with data-translate attribute
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.getAttribute('data-translate');
+                if (t[key]) {
+                    element.textContent = t[key];
+                }
+            });
+
+            // Update select element
+            document.getElementById('interfaceLanguage').value = lang;
+            
+            // Apply RTL for Arabic
+            if (lang === 'ar') {
+                document.body.classList.add('rtl');
+            } else {
+                document.body.classList.remove('rtl');
+            }
+            
+            // Reload current view
+            const activeApp = document.querySelector('.app-container.active');
+            if (activeApp) {
+                if (activeApp.id === 'dashboard') {
+                    loadDashboard();
+                } else if (activeApp.id === 'attendanceManager') {
+                    loadAttendanceManager();
+                } else if (activeApp.id === 'scheduleManager') {
+                    loadScheduleManager();
+                }
+            }
+            
+            // Show confirmation
+            alert(`Language changed to ${document.getElementById('interfaceLanguage').options[document.getElementById('interfaceLanguage').selectedIndex].text}`);
+        }
+
+        // ==================== PROPER SCANNING SYSTEM ====================
+        function startScanning() {
+            if (!currentLectureId) return;
+            
+            stopScanning(); // Clear any existing interval
+            
+            // ✅ FIXED: No automatic scanning - only update display occasionally
+            scanInterval = setInterval(() => {
+                updateScanStats(); // Just update the display stats
+            }, 2000); // Update every 2 seconds for real-time display
+            
+            console.log('QR Code scanning ready - waiting for actual student scans');
+            updateScanStatus('QR Code Active - Waiting for student scans', '#44ff44');
+        }
+
+        function stopScanning() {
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+        }
+
+        function updateScanStats() {
+            const lecture = lectures.find(l => l.id === currentLectureId);
+            if (lecture) {
+                document.getElementById('scannedCount').textContent = lecture.attendance.length;
+                document.getElementById('totalStudentsCount').textContent = lecture.students;
+            }
+        }
+
+        function updateScanStatus(message, color = '#44ff44') {
+            const statusElement = document.getElementById('scanStatusText');
+            statusElement.textContent = message;
+            statusElement.style.color = color;
+        }
+
+        // Simulate a student scanning the QR code
+        function simulateStudentScan(studentId, qrData) {
+            const sharedData = getSharedData();
+            const student = sharedData.students.find(s => s.id === studentId);
+            
+            if (!student) {
+                console.error('Student not found:', studentId);
+                return false;
+            }
+            
+            return recordStudentAttendance(student, qrData);
+        }
+
+        // Test function to simulate a random student scan
+        function testScanRandomStudent() {
+            if (!currentLectureId) {
+                alert('No active lecture. Please show QR code first.');
+                return;
+            }
+            
+            const sharedData = getSharedData();
+            const lecture = lectures.find(l => l.id === currentLectureId);
+            
+            // Get students who haven't scanned yet
+            const availableStudents = sharedData.students.filter(student => 
+                !lecture.attendance.some(att => att.studentId === student.id)
+            );
+            
+            if (availableStudents.length === 0) {
+                alert('All students have already scanned!');
+                return;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * availableStudents.length);
+            const student = availableStudents[randomIndex];
+            
+            const qrData = {
+                lectureId: currentLectureId,
+                courseCode: lecture.code,
+                courseName: lecture.course,
+                room: lecture.room
+            };
+            
+            const success = simulateStudentScan(student.id, qrData);
+            if (success) {
+                alert(`✅ Test scan successful!\nStudent: ${student.name}\nID: ${student.id}`);
+                updateScanStats();
+                updateScanStatus(`${lecture.attendance.length} students scanned`, '#44ff44');
+            } else {
+                alert('❌ Test scan failed!');
+            }
+        }
+
+        // ==================== NAVIGATION ====================
+        function showApp(appName) {
+            document.querySelectorAll('.app-container').forEach(app => {
+                app.classList.remove('active');
+            });
+            document.getElementById(appName).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            if (appName === 'dashboard') {
+                loadDashboard();
+            } else if (appName === 'attendanceManager') {
+                loadAttendanceManager();
+            } else if (appName === 'scheduleManager') {
+                loadScheduleManager();
+            }
+        }
+
+        // ==================== DASHBOARD FUNCTIONS ====================
+        function loadDashboard() {
+            document.getElementById('totalLectures').textContent = lectures.length;
+            document.getElementById('activeLectures').textContent = lectures.filter(l => l.status === 'active').length;
+            document.getElementById('totalStudents').textContent = lectures.reduce((sum, l) => sum + l.students, 0);
+            
+            const sharedData = getSharedData();
+            const totalAttendance = sharedData.attendanceRecords.filter(a => a.status === 'present').length;
+            const totalPossible = sharedData.attendanceRecords.length;
+            const attendanceRate = totalPossible > 0 ? Math.round((totalAttendance / totalPossible) * 100) : 0;
+            document.getElementById('attendanceRate').textContent = attendanceRate + '%';
+            
+            const tbody = document.getElementById('lecturesTableBody');
+            tbody.innerHTML = '';
+            
+            const t = translations[currentLanguage] || translations.en;
+            
+            lectures.forEach(lecture => {
+                const presentCount = lecture.attendance.filter(a => a.status === 'present').length;
+                const row = document.createElement('tr');
+                
+                let statusText = lecture.status;
+                if (lecture.status === 'scheduled') statusText = t.scheduled;
+                if (lecture.status === 'active') statusText = t.active;
+                if (lecture.status === 'completed') statusText = t.completed;
+                
+                row.innerHTML = `
+                    <td><strong>${lecture.code}</strong><br>${lecture.course}</td>
+                    <td>${lecture.date}<br>${lecture.time}</td>
+                    <td>${lecture.room}</td>
+                    <td>${presentCount}/${lecture.students} ${t.students}</td>
+                    <td><span class="status-badge status-${lecture.status}">${statusText.toUpperCase()}</span></td>
+                    <td>
+                        ${lecture.status === 'scheduled' ? 
+                            `<button class="btn btn-primary" onclick="startLecture(${lecture.id})">
+                                <i class="fas fa-play"></i> ${t.start}
+                            </button>` : 
+                         lecture.status === 'active' ? 
+                            `<button class="btn btn-warning" onclick="showQRModal(${lecture.id})">
+                                <i class="fas fa-qrcode"></i> ${t.showQR}
+                            </button>
+                            <button class="btn btn-danger" onclick="endLecture(${lecture.id})">
+                                <i class="fas fa-stop"></i> ${t.end}
+                            </button>` :
+                            `<button class="btn btn-info" onclick="viewAttendance(${lecture.id})">
+                                <i class="fas fa-eye"></i> ${t.view}
+                            </button>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function openNewLectureModal() {
+            document.getElementById('newLectureModal').style.display = 'flex';
+        }
+
+        function closeNewLectureModal() {
+            document.getElementById('newLectureModal').style.display = 'none';
+        }
+
+        document.getElementById('newLectureForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const courseCode = document.getElementById('newLectureCourseCode').value.trim();
+            const courseName = document.getElementById('newLectureCourseName').value.trim();
+            const room = document.getElementById('newLectureRoom').value.trim();
+            const students = parseInt(document.getElementById('newLectureStudents').value);
+            
+            if (!courseCode || !courseName || !room || !students) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            const newLecture = {
+                id: lectures.length > 0 ? Math.max(...lectures.map(l => l.id)) + 1 : 1,
+                course: courseName,
+                code: courseCode,
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                status: 'active',
+                students: students,
+                room: room,
+                attendance: []
+            };
+            
+            lectures.push(newLecture);
+            localStorage.setItem('lectures', JSON.stringify(lectures));
+            closeNewLectureModal();
+            loadDashboard();
+            
+            alert('New lecture started successfully!');
+        });
+
+        function startLecture(lectureId) {
+            const lecture = lectures.find(l => l.id === lectureId);
+            lecture.status = 'active';
+            localStorage.setItem('lectures', JSON.stringify(lectures));
+            loadDashboard();
+        }
+
+        function endLecture(lectureId) {
+            const lecture = lectures.find(l => l.id === lectureId);
+            lecture.status = 'completed';
+            localStorage.setItem('lectures', JSON.stringify(lectures));
+            loadDashboard();
+        }
+
+        function viewAttendance(lectureId) {
+            const lecture = lectures.find(l => l.id === lectureId);
+            const presentCount = lecture.attendance.filter(a => a.status === 'present').length;
+            alert(`Attendance for ${lecture.code}: ${presentCount}/${lecture.students} students present`);
+        }
+
+        // ==================== QR CODE SYSTEM ====================
+        function showQRModal(lectureId) {
+            const lecture = lectures.find(l => l.id === lectureId);
+            if (!lecture) return;
+            
+            currentLectureId = lectureId;
+            
+            document.getElementById('qrCourseCode').textContent = lecture.code;
+            document.getElementById('qrCourseName').textContent = lecture.course;
+            document.getElementById('qrLectureRoom').textContent = lecture.room;
+            document.getElementById('qrLectureStudents').textContent = lecture.students;
+            
+            generateRealQRCode(lecture);
+            document.getElementById('qrModal').style.display = 'flex';
+            
+            startQRTimer(10);
+            startScanning(); // Start monitoring for scans
+            updateScanStats(); // Initialize the display
+            updateScanStatus('Waiting for student scans...', '#ffff44');
+        }
+
+        function generateRealQRCode(lecture) {
+            // ✅ FIXED: QR Code format now matches Student App expectations
+            const qrData = JSON.stringify({
+                type: "attendance",
+                courseCode: lecture.code,
+                courseName: lecture.course,
+                room: lecture.room,
+                timestamp: Date.now()
+            });
+            
+            const sharedData = getSharedData();
+            const existingLectureIndex = sharedData.lectures.findIndex(l => l.id === lecture.id);
+            
+            if (existingLectureIndex === -1) {
+                sharedData.lectures.push({
+                    id: lecture.id,
+                    courseCode: lecture.code,
+                    courseName: lecture.course,
+                    room: lecture.room,
+                    date: lecture.date,
+                    time: lecture.time,
+                    status: 'active',
+                    students: lecture.students,
+                    attendance: []
+                });
+                updateSharedData(sharedData);
+            }
+            
+            const qrCodeImage = document.getElementById('qrCodeImage');
+            const qrCanvas = document.getElementById('qrCanvas');
+            
+            // Use the QRCode library you already imported
+            try {
+                // Clear previous QR code
+                const qrContainer = document.querySelector('.qr-code-container');
+                
+                // Generate QR code using the library
+                QRCode.toCanvas(qrCanvas, qrData, {
+                    width: 200,
+                    height: 200,
+                    margin: 2,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                }, function(error) {
+                    if (error) {
+                        console.error('QR Code generation error:', error);
+                        fallbackToExternalAPI(qrData, qrCodeImage);
+                    } else {
+                        console.log('QR Code generated successfully');
+                        console.log('QR Data:', qrData); // Debug log
+                        // Hide the old image element since we're using canvas
+                        qrCodeImage.style.display = 'none';
+                        qrCanvas.style.display = 'block';
+                    }
+                });
+                
+            } catch (error) {
+                console.error('QR Code library error:', error);
+                fallbackToExternalAPI(qrData, qrCodeImage);
+            }
+        }
+
+        function fallbackToExternalAPI(qrData, qrCodeImage) {
+            // Fallback to external API if library fails
+            const encodedData = encodeURIComponent(qrData);
+            qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedData}&format=png&margin=2&color=000000&bgcolor=FFFFFF`;
+            qrCodeImage.style.display = 'block';
+            document.getElementById('qrCanvas').style.display = 'none';
+            console.log('Using external QR code API as fallback');
+        }
+
+        function startQRTimer(minutes) {
+            let timeLeft = minutes * 60;
+            if (qrTimerInterval) clearInterval(qrTimerInterval);
+            
+            updateQRTimerDisplay(timeLeft);
+            
+            qrTimerInterval = setInterval(() => {
+                timeLeft--;
+                updateQRTimerDisplay(timeLeft);
+                
+                if (timeLeft <= 0) {
+                    clearInterval(qrTimerInterval);
+                    autoCloseQRModal();
+                }
+            }, 1000);
+        }
+
+        function updateQRTimerDisplay(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            const timerElement = document.getElementById('timerValue');
+            
+            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            if (seconds < 60) {
+                timerElement.style.color = '#ff4444';
+                timerElement.classList.add('timer-danger');
+            } else if (seconds < 180) {
+                timerElement.style.color = '#ffff44';
+                timerElement.classList.add('timer-warning');
+            } else {
+                timerElement.style.color = '#44ff44';
+                timerElement.classList.remove('timer-warning', 'timer-danger');
+            }
+        }
+
+        function refreshQRCode() {
+            if (currentLectureId) {
+                const lecture = lectures.find(l => l.id === currentLectureId);
+                if (lecture) {
+                    generateRealQRCode(lecture);
+                    startQRTimer(10);
+                    alert('QR Code refreshed!');
+                }
+            }
+        }
+
+        function closeQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
+            if (qrTimerInterval) clearInterval(qrTimerInterval);
+            stopScanning();
+            currentLectureId = null;
+        }
+
+        function autoCloseQRModal() {
+            document.getElementById('qrModal').style.display = 'none';
+            stopScanning();
+            currentLectureId = null;
+            alert('QR code has expired. Please generate a new one.');
+        }
+
+        // ==================== STUDENT ATTENDANCE RECORDING ====================
+        function recordStudentAttendance(studentData, qrData) {
+            const sharedData = getSharedData();
+            
+            const lectureIndex = sharedData.lectures.findIndex(l => l.id === qrData.lectureId);
+            if (lectureIndex === -1) {
+                console.error('Lecture not found in shared data');
+                return false;
+            }
+            
+            // Check if student already recorded attendance for this lecture
+            const existingAttendance = sharedData.lectures[lectureIndex].attendance.find(
+                a => a.studentId === studentData.id
+            );
+            
+            if (existingAttendance) {
+                console.log('Student already recorded attendance for this lecture');
+                return false; // Prevent duplicate entries
+            }
+            
+            const attendanceRecord = {
+                studentId: studentData.id,
+                studentName: studentData.name,
+                courseCode: qrData.courseCode,
+                courseName: qrData.courseName,
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toLocaleTimeString(),
+                status: 'present',
+                room: qrData.room,
+                timestamp: new Date().toISOString(),
+                lectureId: qrData.lectureId
+            };
+            
+            // Add to shared data
+            sharedData.lectures[lectureIndex].attendance.push(attendanceRecord);
+            sharedData.attendanceRecords.push(attendanceRecord);
+            updateSharedData(sharedData);
+            
+            // Update local lecture data
+            const localLectureIndex = lectures.findIndex(l => l.id === qrData.lectureId);
+            if (localLectureIndex !== -1) {
+                lectures[localLectureIndex].attendance.push(attendanceRecord);
+                localStorage.setItem('lectures', JSON.stringify(lectures));
+            }
+            
+            console.log('Attendance recorded for:', studentData.name);
+            return true;
+        }
+
+        // ==================== ATTENDANCE MANAGER ====================
+        function loadAttendanceManager() {
+            const sharedData = getSharedData();
+            
+            const courseFilter = document.getElementById('courseFilter');
+            courseFilter.innerHTML = '';
+            
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = translations[currentLanguage].allCourses;
+            courseFilter.appendChild(allOption);
+            
+            const courses = [...new Set(sharedData.attendanceRecords.map(r => r.courseCode))];
+            courses.forEach(course => {
+                const option = document.createElement('option');
+                option.value = course;
+                option.textContent = course;
+                courseFilter.appendChild(option);
+            });
+            
+            const tbody = document.getElementById('attendanceTableBody');
+            tbody.innerHTML = '';
+            
+            const totalRecords = sharedData.attendanceRecords.length;
+            document.getElementById('totalRecords').textContent = totalRecords;
+            
+            const today = new Date().toISOString().split('T')[0];
+            const todayRecords = sharedData.attendanceRecords.filter(r => r.date === today && r.status === 'present');
+            const presentToday = totalRecords > 0 ? Math.round((todayRecords.length / totalRecords) * 100) : 0;
+            document.getElementById('presentToday').textContent = presentToday + '%';
+            
+            document.getElementById('presentWeek').textContent = (presentToday - 5) + '%';
+            document.getElementById('presentMonth').textContent = (presentToday - 10) + '%';
+            
+            const t = translations[currentLanguage] || translations.en;
+            
+            sharedData.attendanceRecords.forEach(record => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${record.studentId}</td>
+                    <td>${record.studentName}</td>
+                    <td>${record.courseCode}</td>
+                    <td>${record.date}</td>
+                    <td>${record.time}</td>
+                    <td><span class="status-badge ${record.status === 'present' ? 'status-completed' : 'status-scheduled'}">${record.status.toUpperCase()}</span></td>
+                    <td>
+                        <button class="btn btn-info" onclick="viewAttendanceDetails('${record.studentId}', '${record.date}')">${t.view}</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function viewAttendanceDetails(studentId, date) {
+            const sharedData = getSharedData();
+            const record = sharedData.attendanceRecords.find(r => r.studentId === studentId && r.date === date);
+            if (record) {
+                alert(`Attendance Details:\nStudent: ${record.studentName}\nID: ${record.studentId}\nCourse: ${record.courseCode}\nDate: ${record.date}\nTime: ${record.time}\nStatus: ${record.status}\nRoom: ${record.room}`);
+            }
+        }
+
+        function applyFilters() {
+            alert('Filters applied!');
+        }
+
+        // ==================== SCHEDULE MANAGER ====================
+        function loadScheduleManager() {
+            generateCalendar();
+            
+            const tbody = document.getElementById('scheduleTableBody');
+            tbody.innerHTML = '';
+            
+            const t = translations[currentLanguage] || translations.en;
+            
+            schedules.forEach(schedule => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td><strong>${schedule.course}</strong><br>${schedule.courseName}</td>
+                    <td>${schedule.day}</td>
+                    <td>${schedule.time}</td>
+                    <td>${schedule.room}</td>
+                    <td>${schedule.recurring}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="editSchedule(${schedule.id})">${t.edit}</button>
+                        <button class="btn btn-danger" onclick="deleteSchedule(${schedule.id})">${t.delete}</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function generateCalendar() {
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Update month display
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('currentMonth').textContent = `${months[currentMonth]} ${currentYear}`;
+            
+            // Add day headers
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            days.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.textContent = day;
+                dayHeader.style.fontWeight = 'bold';
+                dayHeader.style.color = '#44ff44';
+                calendarGrid.appendChild(dayHeader);
+            });
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day';
+                calendarGrid.appendChild(emptyDay);
+            }
+            
+            // Add calendar days
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                day.className = 'calendar-day';
+                day.textContent = i;
+                
+                // Mark today
+                const today = new Date();
+                if (i === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+                    day.classList.add('today');
+                }
+                
+                // Mark days with lectures
+                const dayOfWeek = days[new Date(currentYear, currentMonth, i).getDay()];
+                const hasLecture = schedules.some(schedule => {
+                    const scheduleDay = schedule.day.substring(0, 3);
+                    return dayOfWeek.toLowerCase().includes(scheduleDay.toLowerCase());
+                });
+                
+                if (hasLecture) {
+                    day.classList.add('has-lecture');
+                }
+                
+                calendarGrid.appendChild(day);
+            }
+        }
+
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            generateCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateCalendar();
+        }
+
+        function openScheduleModal() {
+            document.getElementById('newScheduleModal').style.display = 'flex';
+        }
+
+        function closeNewScheduleModal() {
+            document.getElementById('newScheduleModal').style.display = 'none';
+        }
+
+        document.getElementById('newScheduleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const courseCode = document.getElementById('newScheduleCourseCode').value.trim();
+            const courseName = document.getElementById('newScheduleCourseName').value.trim();
+            const day = document.getElementById('newScheduleDay').value;
+            const startTime = document.getElementById('newScheduleStartTime').value;
+            const endTime = document.getElementById('newScheduleEndTime').value;
+            const room = document.getElementById('newScheduleRoom').value.trim();
+            const recurring = document.getElementById('newScheduleRecurring').value;
+            
+            if (!courseCode || !courseName || !day || !startTime || !endTime || !room || !recurring) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Create new schedule
+            const newSchedule = {
+                id: schedules.length > 0 ? Math.max(...schedules.map(s => s.id)) + 1 : 1,
+                course: courseCode,
+                courseName: courseName,
+                day: day,
+                time: `${startTime}-${endTime}`,
+                room: room,
+                recurring: recurring
+            };
+            
+            schedules.push(newSchedule);
+            localStorage.setItem('schedules', JSON.stringify(schedules));
+            closeNewScheduleModal();
+            loadScheduleManager();
+            
+            alert('New schedule added successfully!');
+        });
+
+        function editSchedule(scheduleId) {
+            const schedule = schedules.find(s => s.id === scheduleId);
+            alert('Editing schedule for ' + schedule.course);
+        }
+
+        function deleteSchedule(scheduleId) {
+            if (confirm('Are you sure you want to delete this schedule?')) {
+                schedules = schedules.filter(s => s.id !== scheduleId);
+                localStorage.setItem('schedules', JSON.stringify(schedules));
+                loadScheduleManager();
+                alert('Schedule deleted successfully!');
+            }
+        }
+
+        // ==================== EXPORT FUNCTIONS ====================
+        function exportAttendance(format) {
+            const sharedData = getSharedData();
+            
+            if (sharedData.attendanceRecords.length === 0) {
+                alert('No attendance data to export');
+                return;
+            }
+            
+            if (format === 'csv') {
+                exportToCSV(sharedData.attendanceRecords);
+            } else if (format === 'pdf') {
+                exportToPDF(sharedData.attendanceRecords);
+            } else if (format === 'excel') {
+                exportToExcel(sharedData.attendanceRecords);
+            }
+        }
+
+        function exportToCSV(data) {
+            try {
+                const headers = ['Student ID', 'Student Name', 'Course Code', 'Course Name', 'Date', 'Time', 'Status', 'Room'];
+                
+                const csvContent = [
+                    headers.join(','),
+                    ...data.map(row => [
+                        `"${row.studentId}"`,
+                        `"${row.studentName}"`,
+                        `"${row.courseCode}"`,
+                        `"${row.courseName}"`,
+                        `"${row.date}"`,
+                        `"${row.time}"`,
+                        `"${row.status}"`,
+                        `"${row.room}"`
+                    ].join(','))
+                ].join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `attendance_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                alert('CSV file downloaded successfully!');
+            } catch (error) {
+                alert('Error exporting CSV: ' + error.message);
+            }
+        }
+
+        function exportToPDF(data) {
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                doc.setFontSize(20);
+                doc.text('Attendance Report', 14, 15);
+                
+                doc.setFontSize(10);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+                doc.text(`Total Records: ${data.length}`, 14, 28);
+                
+                const tableData = data.map(row => [
+                    row.studentId,
+                    row.studentName,
+                    row.courseCode,
+                    row.date,
+                    row.time,
+                    row.status === 'present' ? 'Present' : 'Absent',
+                    row.room
+                ]);
+                
+                doc.autoTable({
+                    head: [['Student ID', 'Student Name', 'Course', 'Date', 'Time', 'Status', 'Room']],
+                    body: tableData,
+                    startY: 35,
+                    styles: { fontSize: 8 },
+                    headStyles: { fillColor: [34, 170, 68] }
+                });
+                
+                doc.save(`attendance_${new Date().toISOString().split('T')[0]}.pdf`);
+                
+                alert('PDF file downloaded successfully!');
+            } catch (error) {
+                alert('Error exporting PDF: ' + error.message);
+            }
+        }
+
+        function exportToExcel(data) {
+            try {
+                const ws = XLSX.utils.json_to_sheet(data.map(row => ({
+                    'Student ID': row.studentId,
+                    'Student Name': row.studentName,
+                    'Course Code': row.courseCode,
+                    'Course Name': row.courseName,
+                    'Date': row.date,
+                    'Time': row.time,
+                    'Status': row.status,
+                    'Room': row.room
+                })));
+                
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+                XLSX.writeFile(wb, `attendance_${new Date().toISOString().split('T')[0]}.xlsx`);
+                
+                alert('Excel file downloaded successfully!');
+            } catch (error) {
+                alert('Error exporting Excel: ' + error.message);
+            }
+        }
+
+        // ==================== SETTINGS FUNCTIONS ====================
+        function toggleDarkMode(enabled) {
+            if (enabled) {
+                document.body.classList.remove('light-mode');
+            } else {
+                document.body.classList.add('light-mode');
+            }
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                if (qrTimerInterval) {
+                    clearInterval(qrTimerInterval);
+                    currentLectureId = null;
+                }
+                stopScanning();
+            }
+        });
+
+        // ==================== INITIALIZATION ====================
+        initializeSharedStorage();
+        loadDashboard();
+        updateLanguage('en');
+        
+        // Initialize settings
+        document.getElementById('interfaceLanguage').value = 'en';
+        document.getElementById('darkModeToggle').checked = true;
+    </script>
+</body>
+</html>
